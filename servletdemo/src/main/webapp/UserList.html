@@ -71,14 +71,14 @@
                     <tr>
                         <td>${user.username}</td>
                         <td>
-                            <span id="email-${user.username}">${user.email}</span>
-                            <input type="text" class="form-control d-none" id="edit-email-${user.username}" value="${user.email}">
+                            <span id="email-${user.id}">${user.email}</span>
+                            <input type="text" class="form-control d-none" id="edit-email-${user.id}" value="${user.email}">
                         </td>
                         <td>
-                            <button class="btn btn-warning btn-sm" id="edit-btn-${user.username}" onclick="enableEdit('${user.username}')">修改</button>
-                            <button class="btn btn-success btn-sm d-none" id="save-btn-${user.username}" onclick="saveEmail('${user.username}')">儲存</button>
-                            <button class="btn btn-secondary btn-sm d-none" id="cancel-btn-${user.username}" onclick="cancelEdit('${user.username}')">取消</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.username}')">刪除</button>
+                            <button class="btn btn-warning btn-sm edit-btn" data-id="${user.id}">修改</button>
+                            <button class="btn btn-success btn-sm d-none save-btn" data-id="${user.id}">儲存</button>
+                            <button class="btn btn-secondary btn-sm d-none cancel-btn" data-id="${user.id}">取消</button>
+                            <button class="btn btn-danger btn-sm delete-btn" data-id="${user.id}">刪除</button>
                         </td>
                     </tr>
                 `;
@@ -86,33 +86,45 @@
             });
         }
 
-        function enableEdit(username) {
-            document.getElementById(`email-${username}`).classList.add("d-none");
-            document.getElementById(`edit-email-${username}`).classList.remove("d-none");
+        document.addEventListener("click", function(event) {
+            if (event.target.matches(".edit-btn")) {
+                enableEdit(event.target.dataset.id);
+            } else if (event.target.matches(".save-btn")) {
+                saveEmail(event.target.dataset.id);
+            } else if (event.target.matches(".cancel-btn")) {
+                cancelEdit(event.target.dataset.id);
+            } else if (event.target.matches(".delete-btn")) {
+                deleteUser(event.target.dataset.id);
+            }
+        });
 
-            document.getElementById(`edit-btn-${username}`).classList.add("d-none");
-            document.getElementById(`save-btn-${username}`).classList.remove("d-none");
-            document.getElementById(`cancel-btn-${username}`).classList.remove("d-none");
+        function enableEdit(userId) {
+            document.getElementById(`email-${userId}`).classList.add("d-none");
+            document.getElementById(`edit-email-${userId}`).classList.remove("d-none");
+
+            document.querySelector(`[data-id='${userId}'].edit-btn`).classList.add("d-none");
+            document.querySelector(`[data-id='${userId}'].save-btn`).classList.remove("d-none");
+            document.querySelector(`[data-id='${userId}'].cancel-btn`).classList.remove("d-none");
         }
 
-        function cancelEdit(username) {
-            const emailField = document.getElementById(`edit-email-${username}`);
+        function cancelEdit(userId) {
+            const emailField = document.getElementById(`edit-email-${userId}`);
             emailField.classList.add("d-none");
-            document.getElementById(`email-${username}`).classList.remove("d-none");
+            document.getElementById(`email-${userId}`).classList.remove("d-none");
 
-            document.getElementById(`edit-btn-${username}`).classList.remove("d-none");
-            document.getElementById(`save-btn-${username}`).classList.add("d-none");
-            document.getElementById(`cancel-btn-${username}`).classList.add("d-none");
+            document.querySelector(`[data-id='${userId}'].edit-btn`).classList.remove("d-none");
+            document.querySelector(`[data-id='${userId}'].save-btn`).classList.add("d-none");
+            document.querySelector(`[data-id='${userId}'].cancel-btn`).classList.add("d-none");
 
-            emailField.value = document.getElementById(`email-${username}`).textContent;
+            emailField.value = document.getElementById(`email-${userId}`).textContent;
         }
 
-        function saveEmail(username) {
-            const newEmail = document.getElementById(`edit-email-${username}`).value;
+        function saveEmail(userId) {
+            const newEmail = document.getElementById(`edit-email-${userId}`).value;
             fetch("/servletdemo/DisplayDataServlet", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: `action=update&username=${username}&email=${newEmail}`
+                body: `action=update&id=${userId}&email=${newEmail}`
             })
             .then(response => response.json())
             .then(data => {
@@ -122,12 +134,12 @@
             .catch(error => console.error("修改 Email 失敗:", error));
         }
 
-        function deleteUser(username) {
-            if (confirm(`確定要刪除 ${username} 嗎？`)) {
+        function deleteUser(userId) {
+            if (confirm("確定要刪除該用戶嗎？")) {
                 fetch("/servletdemo/DisplayDataServlet", {
                     method: "POST",
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: `action=delete&username=${username}`
+                    body: `action=delete&id=${userId}`
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -143,22 +155,19 @@
                 .then(response => response.json())
                 .then(data => {
                     usersData = data;
-                    
-                    // **取得 DataTable 實例**
                     const table = $('#userTable').DataTable();
-                    table.clear(); // 清除現有行
-                    
-                    // **重新填充數據**
+                    table.clear();
+
                     if (data.length > 0) {
                         data.forEach(user => {
                             table.row.add([
                                 user.username,
-                                `<span id="email-${user.username}">${user.email}</span>
-                                <input type="text" class="form-control d-none" id="edit-email-${user.username}" value="${user.email}">`,
-                                `<button class="btn btn-warning btn-sm" id="edit-btn-${user.username}" onclick="enableEdit('${user.username}')">修改</button>
-                                <button class="btn btn-success btn-sm d-none" id="save-btn-${user.username}" onclick="saveEmail('${user.username}')">儲存</button>
-                                <button class="btn btn-secondary btn-sm d-none" id="cancel-btn-${user.username}" onclick="cancelEdit('${user.username}')">取消</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.username}')">刪除</button>`
+                                `<span id="email-${user.id}">${user.email}</span>
+                                <input type="text" class="form-control d-none" id="edit-email-${user.id}" value="${user.email}">`,
+                                `<button class="btn btn-warning btn-sm edit-btn" data-id="${user.id}">修改</button>
+                                <button class="btn btn-success btn-sm d-none save-btn" data-id="${user.id}">儲存</button>
+                                <button class="btn btn-secondary btn-sm d-none cancel-btn" data-id="${user.id}">取消</button>
+                                <button class="btn btn-danger btn-sm delete-btn" data-id="${user.id}">刪除</button>`
                             ]);
                         });
                     } else {

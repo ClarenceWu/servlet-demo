@@ -58,7 +58,7 @@ public class DisplayDataServlet extends HttpServlet {
             connection = dataSource.getConnection();
             logToFile("[成功] 資料庫連線成功！");
 
-            String sql = "SELECT username, email FROM users";
+            String sql = "SELECT id, username, email FROM users";
             PreparedStatement statement;
 
             if (searchQuery != null && !searchQuery.trim().isEmpty()) {
@@ -75,6 +75,7 @@ public class DisplayDataServlet extends HttpServlet {
 
             while (resultSet.next()) {
                 JSONObject userObj = new JSONObject();
+                userObj.put("id", resultSet.getString("id"));
                 userObj.put("username", resultSet.getString("username"));
                 userObj.put("email", resultSet.getString("email"));
                 jsonArray.put(userObj);
@@ -108,6 +109,7 @@ public class DisplayDataServlet extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
 
         String action = request.getParameter("action");
+        String id = request.getParameter("id");
         String username = request.getParameter("username");
         String email = request.getParameter("email");
 
@@ -121,17 +123,17 @@ public class DisplayDataServlet extends HttpServlet {
             connection = dataSource.getConnection();
 
             if ("update".equals(action)) {
-                String updateSQL = "UPDATE users SET email = ? WHERE username = ?";
+                String updateSQL = "UPDATE users SET email = ? WHERE id = ?";
                 PreparedStatement stmt = connection.prepareStatement(updateSQL);
                 stmt.setString(1, email);
-                stmt.setString(2, username);
+                stmt.setString(2, id);
 
                 int rowsAffected = stmt.executeUpdate();
                 response.getWriter().write(rowsAffected > 0 ? "{\"message\": \"更新成功\"}" : "{\"error\": \"更新失敗\"}");
             } else if ("delete".equals(action)) {
-                String deleteSQL = "DELETE FROM users WHERE username = ?";
+                String deleteSQL = "DELETE FROM users WHERE id = ?";
                 PreparedStatement stmt = connection.prepareStatement(deleteSQL);
-                stmt.setString(1, username);
+                stmt.setString(1, id);
 
                 int rowsAffected = stmt.executeUpdate();
                 response.getWriter().write(rowsAffected > 0 ? "{\"message\": \"刪除成功\"}" : "{\"error\": \"刪除失敗\"}");
