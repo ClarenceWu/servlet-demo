@@ -1,95 +1,175 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>用戶列表</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
-    </head>
-    <body class="bg-light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>用戶管理系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+</head>
+<body class="bg-light">
 
-        <div class="container mt-5">
-            <div class="card shadow-lg">
-                <div class="card-body">
-                    <h2 class="text-center text-primary mb-4">用戶列表</h2>
+    <div class="container mt-5">
+        <div class="card shadow-lg">
+            <div class="card-body">
+                <h2 class="text-center text-primary mb-4">用戶管理</h2>
 
-                    <!-- 搜尋框 -->
-                    <form class="mb-3">
-                        <div class="input-group">
-                            <input type="text" id="searchInput" class="form-control" placeholder="輸入名稱或 Email 進行搜尋">
-                            <button type="button" class="btn btn-primary" onclick="searchUsers()">搜尋</button>
-                        </div>
-                    </form>
-
-                    <!-- 表格 -->
-                    <table id="userTable" class="table table-striped table-bordered">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>使用者名稱</th>
-                                <th>Email</th>
-                            </tr>
-                        </thead>
-                        <tbody id="userTableBody">
-                            <!-- JavaScript 會動態填充這裡的內容 -->
-                        </tbody>
-                    </table>
-
-                    <div class="text-center mt-4">
-                        <a href="insertMail.html" class="btn btn-secondary">返回提交資料</a>
+                <!-- 搜尋框 -->
+                <form class="mb-3">
+                    <div class="input-group">
+                        <input type="text" id="searchInput" class="form-control" placeholder="輸入名稱或 Email 進行搜尋">
+                        <button type="button" class="btn btn-primary" onclick="searchUsers()">搜尋</button>
                     </div>
+                </form>
+
+                <!-- 表格 -->
+                <table id="userTable" class="table table-striped table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>使用者名稱</th>
+                            <th>Email</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <!-- JavaScript 會動態填充這裡的內容 -->
+                    </tbody>
+                </table>
+
+                <!-- 返回提交資料按鈕 -->
+                <div class="text-center mt-4">
+                    <a href="insertMail.html" class="btn btn-secondary">返回提交資料</a>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- JavaScript -->
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 
-        <script>
-            let usersData = [];
+    <script>
+        let usersData = [];
 
-            // **載入頁面時，顯示所有用戶**
-            document.addEventListener("DOMContentLoaded", function() {
-                fetch("/servletdemo/DisplayDataServlet")
-                    .then(response => response.json())
-                    .then(data => {
-                        usersData = data;
-                        populateTable(usersData);
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch("/servletdemo/DisplayDataServlet")
+                .then(response => response.json())
+                .then(data => {
+                    usersData = data;
+                    populateTable(usersData);
+                    $('#userTable').DataTable();
+                })
+                .catch(error => console.error("載入用戶錯誤:", error));
+        });
 
-                        // 啟用 DataTables 功能
-                        $('#userTable').DataTable();
-                    })
-                    .catch(error => console.error("載入用戶錯誤:", error));
+        function populateTable(data) {
+            const tableBody = document.getElementById("userTableBody");
+            tableBody.innerHTML = "";
+
+            data.forEach(user => {
+                const row = `
+                    <tr>
+                        <td>${user.username}</td>
+                        <td>
+                            <span id="email-${user.username}">${user.email}</span>
+                            <input type="text" class="form-control d-none" id="edit-email-${user.username}" value="${user.email}">
+                        </td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" id="edit-btn-${user.username}" onclick="enableEdit('${user.username}')">修改</button>
+                            <button class="btn btn-success btn-sm d-none" id="save-btn-${user.username}" onclick="saveEmail('${user.username}')">儲存</button>
+                            <button class="btn btn-secondary btn-sm d-none" id="cancel-btn-${user.username}" onclick="cancelEdit('${user.username}')">取消</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.username}')">刪除</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
             });
+        }
 
-            // **填充表格**
-            function populateTable(data) {
-                const tableBody = document.getElementById("userTableBody");
-                tableBody.innerHTML = "";
+        function enableEdit(username) {
+            document.getElementById(`email-${username}`).classList.add("d-none");
+            document.getElementById(`edit-email-${username}`).classList.remove("d-none");
 
-                data.forEach(user => {
-                    const row = `<tr><td>${user.username}</td><td>${user.email}</td></tr>`;
-                    tableBody.innerHTML += row;
-                });
+            document.getElementById(`edit-btn-${username}`).classList.add("d-none");
+            document.getElementById(`save-btn-${username}`).classList.remove("d-none");
+            document.getElementById(`cancel-btn-${username}`).classList.remove("d-none");
+        }
+
+        function cancelEdit(username) {
+            const emailField = document.getElementById(`edit-email-${username}`);
+            emailField.classList.add("d-none");
+            document.getElementById(`email-${username}`).classList.remove("d-none");
+
+            document.getElementById(`edit-btn-${username}`).classList.remove("d-none");
+            document.getElementById(`save-btn-${username}`).classList.add("d-none");
+            document.getElementById(`cancel-btn-${username}`).classList.add("d-none");
+
+            emailField.value = document.getElementById(`email-${username}`).textContent;
+        }
+
+        function saveEmail(username) {
+            const newEmail = document.getElementById(`edit-email-${username}`).value;
+            fetch("/servletdemo/DisplayDataServlet", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `action=update&username=${username}&email=${newEmail}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                refreshTable();
+            })
+            .catch(error => console.error("修改 Email 失敗:", error));
+        }
+
+        function deleteUser(username) {
+            if (confirm(`確定要刪除 ${username} 嗎？`)) {
+                fetch("/servletdemo/DisplayDataServlet", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `action=delete&username=${username}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    refreshTable();
+                })
+                .catch(error => console.error("刪除失敗:", error));
             }
+        }
 
-            // **搜尋功能**
-            function searchUsers() {
-                const searchQuery = document.getElementById("searchInput").value;
+        function refreshTable() {
+            fetch("/servletdemo/DisplayDataServlet")
+                .then(response => response.json())
+                .then(data => {
+                    usersData = data;
+                    
+                    // **取得 DataTable 實例**
+                    const table = $('#userTable').DataTable();
+                    table.clear(); // 清除現有行
+                    
+                    // **重新填充數據**
+                    if (data.length > 0) {
+                        data.forEach(user => {
+                            table.row.add([
+                                user.username,
+                                `<span id="email-${user.username}">${user.email}</span>
+                                <input type="text" class="form-control d-none" id="edit-email-${user.username}" value="${user.email}">`,
+                                `<button class="btn btn-warning btn-sm" id="edit-btn-${user.username}" onclick="enableEdit('${user.username}')">修改</button>
+                                <button class="btn btn-success btn-sm d-none" id="save-btn-${user.username}" onclick="saveEmail('${user.username}')">儲存</button>
+                                <button class="btn btn-secondary btn-sm d-none" id="cancel-btn-${user.username}" onclick="cancelEdit('${user.username}')">取消</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.username}')">刪除</button>`
+                            ]);
+                        });
+                    } else {
+                        table.row.add(["沒有用戶資料", "-", "-"]);
+                    }
 
-                fetch(`/servletdemo/DisplayDataServlet?search=${encodeURIComponent(searchQuery)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        usersData = data;
-                        populateTable(usersData);
-                        
-                        // 重新啟用 DataTables 功能
-                        $('#userTable').DataTable().destroy();
-                        $('#userTable').DataTable();
-                    })
-                    .catch(error => console.error("搜尋錯誤:", error));
-            }
-        </script>
-    </body>
+                    table.draw();
+                })
+                .catch(error => console.error("刷新表格失敗:", error));
+        }
+    </script>
+
+</body>
 </html>
